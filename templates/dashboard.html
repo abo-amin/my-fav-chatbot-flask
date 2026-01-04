@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Knowledge Base Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h2>Dashboard</h2>
+            <p>Welcome back! Here's an overview of your chatbot.</p>
+        </div>
+
+        <!-- Ollama Status -->
+        <div class="status-indicator {% if ollama_status.connected %}connected{% else %}disconnected{% endif %}">
+            <span class="status-dot"></span>
+            <span>Ollama {% if ollama_status.connected %}Connected{% else %}Disconnected{% endif %}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">📁</div>
+        <div class="stat-content">
+            <h3>{{ stats.total_documents }}</h3>
+            <p>Documents</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon success">📄</div>
+        <div class="stat-content">
+            <h3>{{ stats.total_chunks }}</h3>
+            <p>Text Chunks</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon warning">🔑</div>
+        <div class="stat-content">
+            <h3>{{ stats.active_api_keys }} / {{ stats.total_api_keys }}</h3>
+            <p>Active API Keys</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon info">💬</div>
+        <div class="stat-content">
+            <h3>{{ stats.total_chats }}</h3>
+            <p>Total Conversations</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Quick Actions</h3>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+            <a href="{{ url_for('admin.documents') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                📤 Upload Document
+            </a>
+            <a href="{{ url_for('admin.api_keys') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                🔑 Create API Key
+            </a>
+            <a href="{{ url_for('admin.models') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                🤖 Configure Model
+            </a>
+            <a href="{{ url_for('admin.chat') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                💬 Test Chatbot
+            </a>
+        </div>
+    </div>
+
+    <!-- Current Model -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Active AI Model</h3>
+        </div>
+
+        <div style="text-align: center; padding: 20px 0;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🤖</div>
+            <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                {{ model_settings.active_model or 'Not configured' }}
+            </h4>
+
+            <div
+                style="display: flex; justify-content: center; gap: 16px; margin-top: 16px; color: var(--text-secondary); font-size: 13px;">
+                <span>🌡️ {{ model_settings.temperature }}</span>
+                <span>📝 {{ model_settings.context_length }}</span>
+            </div>
+
+            <a href="{{ url_for('admin.models') }}" class="btn btn-primary" style="margin-top: 20px;">
+                Configure Model
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- API Usage Info -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">API Endpoint</h3>
+    </div>
+
+    <div
+        style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 14px;">
+        <div style="margin-bottom: 12px;">
+            <span style="color: var(--success);">POST</span>
+            <span style="color: var(--text-primary);">http://localhost:5000/api/v1/chat</span>
+        </div>
+
+        <div style="color: var(--text-muted); margin-bottom: 8px;">Headers:</div>
+        <pre style="color: var(--text-secondary);">X-API-Key: your-api-key-here
+Content-Type: application/json</pre>
+
+        <div style="color: var(--text-muted); margin-top: 12px; margin-bottom: 8px;">Body:</div>
+        <pre style="color: var(--text-secondary);">{
+  "question": "Your question here"
+}</pre>
+    </div>
+</div>
+{% endblock %}

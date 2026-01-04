@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}AI Models - Knowledge Base Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h2>🤖 AI Model Settings</h2>
+            <p>Configure and manage your Ollama models</p>
+        </div>
+
+        <!-- Ollama Status -->
+        <div class="status-indicator {% if ollama_status.connected %}connected{% else %}disconnected{% endif %}">
+            <span class="status-dot"></span>
+            <span>Ollama {% if ollama_status.connected %}Connected{% else %}Disconnected{% endif %}</span>
+        </div>
+    </div>
+</div>
+
+{% if not ollama_status.connected %}
+<!-- Ollama Not Connected Warning -->
+<div class="alert alert-danger" style="margin-bottom: 24px;">
+    <span style="font-size: 20px;">⚠️</span>
+    <div>
+        <strong>Ollama is not running!</strong>
+        <p style="margin-top: 4px; font-size: 13px;">{{ ollama_status.message }}</p>
+        <p style="margin-top: 8px; font-size: 13px;">
+            Start Ollama with: <code
+                style="background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;">ollama serve</code>
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Available Models -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">Available Models</h3>
+        <span class="badge badge-primary">{{ available_models|length }} models</span>
+    </div>
+
+    {% if available_models %}
+    <div class="models-grid">
+        {% for model in available_models %}
+        <div class="model-card {% if model.name == model_settings.active_model %}active{% endif %}"
+            onclick="selectModel('{{ model.name }}')">
+            <div class="model-card-header">
+                <span class="model-name">{{ model.name }}</span>
+                {% if model.name == model_settings.active_model %}
+                <span class="badge badge-success">✓ Active</span>
+                {% endif %}
+            </div>
+
+            <div class="model-size">{{ model.size_formatted }}</div>
+
+            <div class="model-meta" style="margin-top: 12px;">
+                {% if model.details %}
+                <span>{{ model.details.get('family', 'Unknown') }}</span>
+                <span>{{ model.details.get('parameter_size', '') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <div style="font-size: 64px; margin-bottom: 16px;">🤖</div>
+        <p>No models found</p>
+        <p style="font-size: 13px;">
+            {% if ollama_status.connected %}
+            Pull a model with: <code>ollama pull llama3.2:1b</code>
+            {% else %}
+            Start Ollama first, then pull models
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Model Settings Form -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Model Configuration</h3>
+    </div>
+
+    <form action="{{ url_for('admin.update_model_settings') }}" method="POST" id="settings-form">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+            <!-- Active Model -->
+            <div class="form-group">
+                <label class="form-label">Active Model</label>
+                <select name="active_model" class="form-select" id="active-model-select">
+                    {% for model in available_models %}
+                    <option value="{{ model.name }}" {% if model.name==model_settings.active_model %}selected{% endif
+                        %}>
+                        {{ model.name }} ({{ model.size_formatted }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Fallback Model -->
+            <div class="form-group">
+                <label class="form-label">Fallback Model (Optional)</label>
+                <select name="fallback_model" class="form-select">
+                    <option value="">None</option>
+                    {% for model in available_models %}
+                    <option value="{{ model.name }}" {% if model.name==model_settings.fallback_model %}selected{% endif
+                        %}>
+                        {{ model.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Temperature -->
+            <div class="form-group">
+                <label class="form-label">Temperature (Creativity: 0-2)</label>
+                <div class="range-slider">
+                    <input type="range" name="temperature" min="0" max="2" step="0.1"
+                        value="{{ model_settings.temperature }}"
+                        oninput="document.getElementById('temp-value').textContent = this.value">
+                    <span class="range-value" id="temp-value">{{ model_settings.temperature }}</span>
+                </div>
+            </div>
+
+            <!-- Context Length -->
+            <div class="form-group">
+                <label class="form-label">Context Length (tokens)</label>
+                <div class="range-slider">
+                    <input type="range" name="context_length" min="512" max="32768" step="512"
+                        value="{{ model_settings.context_length }}"
+                        oninput="document.getElementById('ctx-value').textContent = this.value">
+                    <span class="range-value" id="ctx-value">{{ model_settings.context_length }}</span>
+                </div>
+            </div>
+
+            <!-- Top P -->
+            <div class="form-group">
+                <label class="form-label">Top P (0-1)</label>
+                <div class="range-slider">
+                    <input type="range" name="top_p" min="0" max="1" step="0.05" value="{{ model_settings.top_p }}"
+                        oninput="document.getElementById('topp-value').textContent = this.value">
+                    <span class="range-value" id="topp-value">{{ model_settings.top_p }}</span>
+                </div>
+            </div>
+
+            <!-- Top K -->
+            <div class="form-group">
+                <label class="form-label">Top K (1-100)</label>
+                <div class="range-slider">
+                    <input type="range" name="top_k" min="1" max="100" step="1" value="{{ model_settings.top_k }}"
+                        oninput="document.getElementById('topk-value').textContent = this.value">
+                    <span class="range-value" id="topk-value">{{ model_settings.top_k }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Prompt -->
+        <div class="form-group" style="margin-top: 24px;">
+            <label class="form-label">System Prompt (Optional)</label>
+            <textarea name="system_prompt" class="form-textarea" rows="4"
+                placeholder="Custom instructions for the AI model...">{{ model_settings.system_prompt or '' }}</textarea>
+        </div>
+
+        <div style="margin-top: 24px;">
+            <button type="submit" class="btn btn-primary">
+                💾 Save Settings
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Parameter Explanations -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">Parameter Guide</h3>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div>
+            <h4 style="font-size: 14px; font-weight: 600; color: var(--accent-primary); margin-bottom: 8px;">
+                🌡️ Temperature
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+                Controls randomness. Lower = more focused, Higher = more creative.
+                Use 0.1-0.4 for factual answers, 0.7-1.0 for creative tasks.
+            </p>
+        </div>
+
+        <div>
+            <h4 style="font-size: 14px; font-weight: 600; color: var(--accent-primary); margin-bottom: 8px;">
+                📝 Context Length
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+                Maximum tokens the model can process. Larger = more context but slower.
+                4096 is a good balance for most use cases.
+            </p>
+        </div>
+
+        <div>
+            <h4 style="font-size: 14px; font-weight: 600; color: var(--accent-primary); margin-bottom: 8px;">
+                🎯 Top P
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+                Nucleus sampling. Only considers tokens with cumulative probability up to this value.
+                0.9 is typically a good default.
+            </p>
+        </div>
+
+        <div>
+            <h4 style="font-size: 14px; font-weight: 600; color: var(--accent-primary); margin-bottom: 8px;">
+                🔢 Top K
+            </h4>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+                Limits to top K most likely tokens. Lower = more focused, Higher = more diverse.
+                40 is a common default value.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function selectModel(modelName) {
+        document.getElementById('active-model-select').value = modelName;
+        // Visual feedback
+        document.querySelectorAll('.model-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+    }
+</script>
+{% endblock %}

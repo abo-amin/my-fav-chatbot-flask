@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Knowledge Base Chatbot{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block body %}
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🤖</div>
+                <h1>KB Chatbot</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('admin.dashboard') }}" 
+                   class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                
+                <a href="{{ url_for('admin.documents') }}" 
+                   class="nav-link {% if request.endpoint == 'admin.documents' %}active{% endif %}">
+                    <span class="icon">📁</span>
+                    <span>Documents</span>
+                </a>
+                
+                <a href="{{ url_for('admin.models') }}" 
+                   class="nav-link {% if request.endpoint == 'admin.models' %}active{% endif %}">
+                    <span class="icon">🤖</span>
+                    <span>AI Models</span>
+                </a>
+                
+                <a href="{{ url_for('admin.api_keys') }}" 
+                   class="nav-link {% if request.endpoint == 'admin.api_keys' %}active{% endif %}">
+                    <span class="icon">🔑</span>
+                    <span>API Keys</span>
+                </a>
+                
+                <a href="{{ url_for('admin.chat') }}" 
+                   class="nav-link {% if request.endpoint == 'admin.chat' %}active{% endif %}">
+                    <span class="icon">💬</span>
+                    <span>Test Chat</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                    <span class="icon">🚪</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% endblock %}
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

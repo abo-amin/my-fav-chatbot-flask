@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+instance/
+.pytest_cache/
+.env
+venv/
+env/
+data/
+uploads/
+!uploads/.gitkeep
+!data/.gitkeep
+fix_index.py

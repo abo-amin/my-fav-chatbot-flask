@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Documents - Knowledge Base Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📁 Document Management</h2>
+    <p>Upload and manage your knowledge base documents</p>
+</div>
+
+<!-- Upload Section -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">Upload New Document</h3>
+    </div>
+
+    <form action="{{ url_for('admin.upload_document') }}" method="POST" enctype="multipart/form-data">
+        <div class="file-upload" onclick="document.getElementById('file-input').click()">
+            <div class="icon">📄</div>
+            <p>Click to upload or drag and drop</p>
+            <p class="supported">Supported: PDF, DOCX, CSV, XLSX, TXT</p>
+            <input type="file" id="file-input" name="file" style="display: none;"
+                accept=".pdf,.docx,.doc,.csv,.xlsx,.xls,.txt" onchange="this.form.submit()">
+        </div>
+    </form>
+</div>
+
+<!-- Documents List -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Uploaded Documents</h3>
+        <span class="badge badge-primary">{{ documents|length }} files</span>
+    </div>
+
+    {% if documents %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Chunks</th>
+                    <th>Status</th>
+                    <th>Uploaded</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">
+                                {% if doc.file_type == 'pdf' %}📕
+                                {% elif doc.file_type in ['docx', 'doc'] %}📘
+                                {% elif doc.file_type in ['csv', 'xlsx', 'xls'] %}📗
+                                {% else %}📄{% endif %}
+                            </span>
+                            <span style="font-weight: 500;">{{ doc.original_filename }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ doc.file_type|upper }}</span>
+                    </td>
+                    <td>{{ "%.2f"|format(doc.file_size / 1024) }} KB</td>
+                    <td>{{ doc.chunk_count }}</td>
+                    <td>
+                        {% if doc.is_indexed %}
+                        <span class="badge badge-success">✓ Indexed</span>
+                        {% else %}
+                        <span class="badge badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 13px;">
+                        {{ doc.created_at }}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('admin.delete_document', doc_id=doc.id) }}" method="POST"
+                            style="display: inline;" onsubmit="return confirm('Delete this document?');">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <div style="font-size: 64px; margin-bottom: 16px;">📂</div>
+        <p>No documents uploaded yet</p>
+        <p style="font-size: 13px;">Upload your first document to start building your knowledge base</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

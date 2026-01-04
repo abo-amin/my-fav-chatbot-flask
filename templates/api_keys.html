@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}API Keys - Knowledge Base Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🔑 API Key Management</h2>
+    <p>Create and manage API keys for external access</p>
+</div>
+
+<!-- Create API Key -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">Create New API Key</h3>
+    </div>
+
+    <form action="{{ url_for('admin.create_api_key') }}" method="POST">
+        <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 16px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Key Name</label>
+                <input type="text" name="name" class="form-input" placeholder="e.g., Mobile App, Web Client" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Rate Limit (per minute)</label>
+                <input type="number" name="rate_limit" class="form-input" value="60" min="1" max="1000">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="height: 46px;">
+                ➕ Create Key
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- API Keys List -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Active API Keys</h3>
+        <span class="badge badge-primary">{{ api_keys|length }} keys</span>
+    </div>
+
+    {% if api_keys %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Key Prefix</th>
+                    <th>Status</th>
+                    <th>Usage</th>
+                    <th>Rate Limit</th>
+                    <th>Last Used</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in api_keys %}
+                <tr>
+                    <td>
+                        <span style="font-weight: 500;">{{ key.name }}</span>
+                    </td>
+                    <td>
+                        <code
+                            style="background: var(--bg-secondary); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
+                            {{ key.key_prefix }}...
+                        </code>
+                    </td>
+                    <td>
+                        {% if key.is_active %}
+                        <span class="badge badge-success">✓ Active</span>
+                        {% else %}
+                        <span class="badge badge-danger">✗ Disabled</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 500;">{{ key.usage_count }}</span>
+                        <span style="color: var(--text-muted);"> requests</span>
+                    </td>
+                    <td>{{ key.rate_limit }}/min</td>
+                    <td style="color: var(--text-muted); font-size: 13px;">
+                        {{ key.last_used_at or 'Never' }}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <form action="{{ url_for('admin.toggle_api_key', key_id=key.id) }}" method="POST">
+                                <input type="hidden" name="is_active"
+                                    value="{{ 'false' if key.is_active else 'true' }}">
+                                <button type="submit"
+                                    class="btn btn-sm {% if key.is_active %}btn-secondary{% else %}btn-success{% endif %}">
+                                    {% if key.is_active %}Disable{% else %}Enable{% endif %}
+                                </button>
+                            </form>
+
+                            <form action="{{ url_for('admin.delete_api_key', key_id=key.id) }}" method="POST"
+                                onsubmit="return confirm('Delete this API key? This cannot be undone.');">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    🗑️
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <div style="font-size: 64px; margin-bottom: 16px;">🔐</div>
+        <p>No API keys created yet</p>
+        <p style="font-size: 13px;">Create your first API key to enable external access</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Usage Instructions -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">How to Use API Keys</h3>
+    </div>
+
+    <div
+        style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 14px;">
+        <div style="color: var(--text-muted); margin-bottom: 8px;">Include in request headers:</div>
+        <pre style="color: var(--text-primary);">X-API-Key: your-api-key-here</pre>
+
+        <div style="color: var(--text-muted); margin-top: 16px; margin-bottom: 8px;">Or as query parameter:</div>
+        <pre style="color: var(--text-primary);">/api/v1/chat?api_key=your-api-key-here</pre>
+    </div>
+</div>
+{% endblock %}

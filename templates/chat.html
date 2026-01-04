@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Knowledge Base Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>💬 Test Chat</h2>
+    <p>Test your chatbot with your knowledge base</p>
+</div>
+
+<div class="chat-container">
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="chat-messages">
+        <!-- Welcome Message -->
+        <div class="chat-message bot">
+            <p>👋 Hello! I'm your Knowledge Base assistant. Ask me anything about your uploaded documents!</p>
+            <div class="source-tag">System</div>
+        </div>
+
+        {% for chat in history %}
+        <div class="chat-message user">
+            {{ chat.question }}
+        </div>
+        <div class="chat-message bot">
+            {{ chat.answer }}
+            <div class="source-tag">
+                {% if chat.source_type == 'documents' %}
+                📄 From Documents
+                {% else %}
+                🤖 AI Knowledge
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-container">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Type your question here..."
+            onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button class="btn btn-primary" onclick="sendMessage()" id="send-btn">
+            📤 Send
+        </button>
+    </div>
+</div>
+
+<!-- Loading indicator -->
+<style>
+    .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 8px 0;
+    }
+
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: var(--accent-primary);
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-indicator span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-indicator span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0);
+        }
+
+        40% {
+            transform: scale(1);
+        }
+    }
+</style>
+
+<script>
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    async function sendMessage() {
+        const question = chatInput.value.trim();
+        if (!question) return;
+
+        // Disable input
+        chatInput.disabled = true;
+        sendBtn.disabled = true;
+
+        // Add user message
+        const userMsg = document.createElement('div');
+        userMsg.className = 'chat-message user';
+        userMsg.textContent = question;
+        chatMessages.appendChild(userMsg);
+
+        // Clear input
+        chatInput.value = '';
+
+        // Add typing indicator
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chat-message bot';
+        typingDiv.id = 'typing';
+        typingDiv.innerHTML = `
+        <div class="typing-indicator">
+            <span></span><span></span><span></span>
+        </div>
+    `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            const formData = new FormData();
+            formData.append('question', question);
+
+            const response = await fetch('{{ url_for("admin.send_chat") }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            // Remove typing indicator
+            document.getElementById('typing').remove();
+
+            // Add bot response
+            const botMsg = document.createElement('div');
+            botMsg.className = 'chat-message bot';
+
+            let sourceTag = data.source_type === 'documents'
+                ? '📄 From Documents'
+                : '🤖 AI Knowledge';
+
+            botMsg.innerHTML = `
+            <p>${escapeHtml(data.answer)}</p>
+            <div class="source-tag">${sourceTag}</div>
+        `;
+
+            if (data.sources && data.sources.length > 0) {
+                const sourcesHtml = data.sources.map(s =>
+                    `<small style="display: block; margin-top: 4px; opacity: 0.7;">• ${s.metadata} (${(s.score * 100).toFixed(0)}%)</small>`
+                ).join('');
+                botMsg.innerHTML += sourcesHtml;
+            }
+
+            chatMessages.appendChild(botMsg);
+
+        } catch (error) {
+            // Remove typing indicator
+            document.getElementById('typing')?.remove();
+
+            // Show error
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'chat-message bot';
+            errorMsg.innerHTML = `
+            <p style="color: var(--danger);">❌ Error: ${error.message}</p>
+            <div class="source-tag">Error</div>
+        `;
+            chatMessages.appendChild(errorMsg);
+        }
+
+        // Re-enable input
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
+        chatInput.focus();
+
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}
